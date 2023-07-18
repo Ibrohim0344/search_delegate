@@ -9,17 +9,12 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  void showCustomDialog(Size size) => showSearch(
-        context: context,
-        delegate: CustomSearchDelegate(
-          hintText: "Search",
-          countries: countries,
-          removeFromChip: removeFromChip,
-        ),
-      );
+  late final ScrollController controller;
 
-  void removeFromChip(List<String> chips, int index) {
-    setState(() => chips.removeAt(index));
+  @override
+  void initState() {
+    super.initState();
+    controller = ScrollController();
   }
 
   List<String> countries = [
@@ -272,6 +267,21 @@ class _HomeScreenState extends State<HomeScreen> {
     "Zambia",
     "Zimbabwe",
   ];
+
+  void showCustomDialog(Size size) => showSearch(
+        context: context,
+        delegate: CustomSearchDelegate(
+          hintText: "Search",
+          countries: countries,
+          scrollController: controller,
+        ),
+      );
+
+  @override
+  void dispose() {
+    controller.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {

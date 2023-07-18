@@ -2,17 +2,24 @@ import 'package:flutter/material.dart';
 
 class CustomSearchDelegate extends SearchDelegate<String> {
   List<String> countries;
-  void Function(List<String> chips, int index) removeFromChip;
+  ScrollController scrollController;
+  ValueNotifier<Set<String>> chipItems = ValueNotifier<Set<String>>(<String>{});
 
   CustomSearchDelegate({
     required String hintText,
     required this.countries,
-    required this.removeFromChip,
+    required this.scrollController,
   }) : super(
           searchFieldLabel: hintText,
           keyboardType: TextInputType.text,
           textInputAction: TextInputAction.search,
         );
+
+  void _scrollDown() => scrollController.animateTo(
+        scrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.fastOutSlowIn,
+      );
 
   @override
   Widget buildLeading(BuildContext context) => const BackButton(
@@ -37,41 +44,61 @@ class CustomSearchDelegate extends SearchDelegate<String> {
           color: Colors.grey,
         ),
         onTap: () {
-          query = suggestion[index];
-          forChips.add(suggestion[index]);
+          query = "";
+
+          Set<String> temp = chipItems.value.toSet();
+          temp.add(suggestion[index]);
+          chipItems.value = temp;
+
+          /// * shart emas
+          Future.delayed(
+            const Duration(milliseconds: 150),
+            _scrollDown,
+          );
         },
         title: Text(suggestion[index]),
       ),
     );
   }
 
-  List<String> forChips = [];
-
   @override
   PreferredSizeWidget buildBottom(BuildContext context) {
     return PreferredSize(
-      preferredSize: const Size.fromHeight(150),
-      child: SingleChildScrollView(
-        child: SizedBox(
-          height: 120,
-          child: Column(
-            // crossAxisAlignment: WrapCrossAlignment.start,
-            // alignment: WrapAlignment.start,
-            children: List.generate(
-              forChips.length,
-              (index) => Chip(
-                padding: const EdgeInsets.all(5),
-                deleteIcon: const Icon(Icons.close),
-                onDeleted: () => removeFromChip(forChips, index),
-                side: const BorderSide(
-                  width: 1,
-                  color: Colors.deepPurple,
-                  strokeAlign: -5,
-                ),
-                visualDensity: VisualDensity.compact,
-                label: Text(forChips[index]),
-              ),
+      preferredSize: const Size.fromHeight(100),
+      child: SizedBox(
+        height: 115,
+        child: ListView(
+          controller: scrollController,
+          padding: const EdgeInsets.symmetric(horizontal: 10),
+          children: List.generate(
+            1,
+            (_) => ValueListenableBuilder(
+              valueListenable: chipItems,
+              builder: (context, value, child) {
+                return Wrap(
+                  children: List.generate(
+                    value.length,
+                    (index) => Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 1.5),
+                      child: InputChip(
+                        label: Text(value.elementAt(index)),
+                        shape: const StadiumBorder(),
+                        deleteIcon: const Icon(
+                          Icons.clear,
+                          size: 16,
+                        ),
+                        onDeleted: () {
+                          Set<String> temp = chipItems.value.toSet();
+                          temp.removeWhere((e) => e == value.elementAt(index));
+                          chipItems.value = temp;
+                        },
+                      ),
+                    ),
+                  ),
+                );
+              },
             ),
+            growable: false,
           ),
         ),
       ),
